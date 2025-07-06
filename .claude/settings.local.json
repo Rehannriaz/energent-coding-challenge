@@ -11,7 +11,8 @@
       "Bash(npm run lint)",
       "mcp__ide__getDiagnostics",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(touch:*)"
     ],
     "deny": []
   }

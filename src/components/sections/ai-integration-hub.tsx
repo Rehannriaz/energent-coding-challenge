@@ -22,7 +22,6 @@ import { useGeminiLiveContext } from "@/contexts/gemini-live-context";
 import { useWebcam } from "@/hooks/use-webcam";
 import { AudioRecorder } from "@/lib/gemini/audio-recorder";
 import { useOpenAIVoiceChat } from "@/hooks/useOpenAIVoiceChat";
-import { CODEC_OPTIONS } from "@/lib/codecUtils";
 import classNames from "classnames";
 import { LiveServerContent, Part } from "@google/genai";
 
@@ -61,52 +60,34 @@ export function AIIntegrationHub() {
   // Check if Gemini is available
   const geminiAvailable = Boolean(client);
 
-  // OpenAI Voice Chat Integration with advanced features
-  const [isPushToTalkEnabled, setIsPushToTalkEnabled] = useState(false);
-  const [selectedCodec, setSelectedCodec] = useState<'opus' | 'pcmu' | 'pcma'>('opus');
-  const [eventLogs, setEventLogs] = useState<Array<{ timestamp: Date; direction: 'client' | 'server'; event: string; data: unknown }>>([]);
-  // Note: eventLogs could be used for debugging panel in the future
-  void eventLogs;
-  
-  // Stable config object for useOpenAIVoiceChat
-  const openAIConfig = useMemo(() => ({
-    apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || '',
-    instructions: 'You are a helpful voice assistant. Respond naturally and conversationally.',
-    voice: 'alloy' as const,
-    codec: selectedCodec,
-    pushToTalk: isPushToTalkEnabled,
-    voiceActivityDetection: {
-      threshold: 0.9,
-      silenceDurationMs: 500,
-      prefixPaddingMs: 300,
-    },
-  }), [selectedCodec, isPushToTalkEnabled]);
-  
-  // Stable callbacks for useOpenAIVoiceChat
-  const openAICallbacks = useMemo(() => ({
-    onConnectionChange: (status: 'CONNECTED' | 'CONNECTING' | 'DISCONNECTED') => {
-      addTextLog("openai.connection", `OpenAI status: ${status}`);
-    },
-    onTranscriptUpdate: (transcript: string, isComplete: boolean) => {
-      addTextLog("openai.transcript", `${isComplete ? 'Complete' : 'Partial'}: ${transcript.substring(0, 50)}${transcript.length > 50 ? '...' : ''}`);
-    },
-    onError: (error: string) => {
-      addTextLog("openai.error", `Error: ${error}`);
-    },
-    onEventLogged: (direction: 'client' | 'server', eventName: string, eventData: unknown) => {
-      setEventLogs(prev => [...prev, { timestamp: new Date(), direction, event: eventName, data: eventData }]);
-    },
-  }), []);
-  
+  // OpenAI Voice Chat Integration (simplified to match Gemini)
   const { 
     state: openAIState, 
     connect: connectOpenAI, 
     disconnect: disconnectOpenAI,
-    pushToTalkStart,
-    pushToTalkStop,
-    toggleAudioPlayback,
-    changeCodec,
-  } = useOpenAIVoiceChat(openAIConfig, openAICallbacks);
+  } = useOpenAIVoiceChat(
+    {
+      apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || '',
+      instructions: 'You are a helpful voice assistant. Respond naturally and conversationally.',
+      voice: 'alloy',
+      voiceActivityDetection: {
+        threshold: 0.9,
+        silenceDurationMs: 500,
+        prefixPaddingMs: 300,
+      },
+    },
+    {
+      onConnectionChange: (status) => {
+        addTextLog("openai.connection", `OpenAI status: ${status}`);
+      },
+      onTranscriptUpdate: (transcript, isComplete) => {
+        addTextLog("openai.transcript", `${isComplete ? 'Complete' : 'Partial'}: ${transcript.substring(0, 50)}${transcript.length > 50 ? '...' : ''}`);
+      },
+      onError: (error) => {
+        addTextLog("openai.error", `Error: ${error}`);
+      },
+    }
+  );
 
   // Helper function to add text logs
   const addTextLog = (type: string, message: string) => {
@@ -463,93 +444,35 @@ export function AIIntegrationHub() {
                 </motion.div>
               )}
 
-              {/* Audio Visualization for OpenAI */}
+              {/* Audio Visualization for OpenAI - simplified to match Gemini */}
               {selectedProvider === "openai" && (
                 <motion.div
-                  className="space-y-4 mb-6"
+                  className="flex items-center justify-center space-x-4 mb-6"
                   initial={{ opacity: 0, y: 10 }}
                   animate={
                     isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }
                   }
                   transition={{ ...smoothTransition, delay: 1.0 }}
                 >
-                  <div className="flex items-center justify-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-300">User:</span>
-                      <div className={`w-3 h-3 rounded-full ${
-                        openAIState.isUserSpeaking ? 'bg-green-500 animate-pulse' : 'bg-gray-600'
-                      }`} />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-300">Assistant:</span>
-                      <div className={`w-3 h-3 rounded-full ${
-                        openAIState.isAssistantSpeaking ? 'bg-blue-500 animate-pulse' : 'bg-gray-600'
-                      }`} />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-300">Status:</span>
-                      <div className={`w-3 h-3 rounded-full ${
-                        openAIState.status === 'CONNECTED' ? 'bg-green-500' : 
-                        openAIState.status === 'CONNECTING' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
-                      }`} />
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-300">Input:</span>
+                    <div className="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-green-500"
+                        style={{ width: `${openAIState.isUserSpeaking ? 75 : 0}%` }}
+                        transition={{ duration: 0.1 }}
+                      />
                     </div>
                   </div>
-                  
-                  {/* OpenAI Controls */}
-                  <div className="flex items-center justify-center space-x-4">
-                    {/* Push-to-Talk Toggle */}
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <button
-                        onClick={() => setIsPushToTalkEnabled(!isPushToTalkEnabled)}
-                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                          isPushToTalkEnabled
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                        }`}
-                        disabled={openAIState.status === 'CONNECTED'}
-                      >
-                        PTT {isPushToTalkEnabled ? 'ON' : 'OFF'}
-                      </button>
-                    </motion.div>
-                    
-                    {/* Codec Selector */}
-                    <select
-                      value={selectedCodec}
-                      onChange={(e) => {
-                        const newCodec = e.target.value as 'opus' | 'pcmu' | 'pcma';
-                        setSelectedCodec(newCodec);
-                        changeCodec(newCodec);
-                      }}
-                      className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={openAIState.status === 'CONNECTED'}
-                    >
-                      {CODEC_OPTIONS.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    
-                    {/* Audio Playback Toggle */}
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <button
-                        onClick={toggleAudioPlayback}
-                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                          openAIState.isAudioPlaybackEnabled
-                            ? 'bg-green-600 text-white hover:bg-green-700'
-                            : 'bg-red-600 text-white hover:bg-red-700'
-                        }`}
-                        disabled={openAIState.status !== 'CONNECTED'}
-                      >
-                        Audio {openAIState.isAudioPlaybackEnabled ? 'ON' : 'OFF'}
-                      </button>
-                    </motion.div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-300">Output:</span>
+                    <div className="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-blue-500"
+                        style={{ width: `${openAIState.isAssistantSpeaking ? 75 : 0}%` }}
+                        transition={{ duration: 0.1 }}
+                      />
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -670,29 +593,6 @@ export function AIIntegrationHub() {
                   </>
                 )}
 
-                {/* Push-to-Talk Button (only for OpenAI when PTT is enabled) */}
-                {selectedProvider === "openai" && isPushToTalkEnabled && openAIState.status === 'CONNECTED' && (
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      size="lg"
-                      onMouseDown={pushToTalkStart}
-                      onMouseUp={pushToTalkStop}
-                      onTouchStart={pushToTalkStart}
-                      onTouchEnd={pushToTalkStop}
-                      className={`rounded-full w-14 h-14 ${
-                        openAIState.isPushToTalkActive
-                          ? "bg-green-600 hover:bg-green-700"
-                          : "bg-gray-600 hover:bg-gray-700"
-                      }`}
-                    >
-                      <Mic className="w-5 h-5" />
-                    </Button>
-                  </motion.div>
-                )}
-                
                 {/* Main Connect/Record Button */}
                 <motion.div
                   whileHover={{ scale: 1.1 }}
@@ -772,7 +672,7 @@ export function AIIntegrationHub() {
                         return connected ? "Voice & Video Active" : "Click to connect";
                       }
                       if (openAIState.status === 'CONNECTED') {
-                        return isPushToTalkEnabled ? "Push-to-Talk Ready" : "Voice Chat Active";
+                        return "Voice Chat Active";
                       }
                       if (openAIState.status === 'CONNECTING') {
                         return "Connecting...";
