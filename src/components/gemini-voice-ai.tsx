@@ -31,12 +31,14 @@ export function GeminiVoiceAI() {
   // Audio recording setup
   useEffect(() => {
     const onData = (base64: string) => {
-      client.sendRealtimeInput([
-        {
-          mimeType: "audio/pcm;rate=16000",
-          data: base64,
-        },
-      ]);
+      if (client && connected) {
+        client.sendRealtimeInput([
+          {
+            mimeType: "audio/pcm;rate=16000",
+            data: base64,
+          },
+        ]);
+      }
     };
 
     if (connected && !muted && audioRecorder) {
@@ -58,7 +60,7 @@ export function GeminiVoiceAI() {
       const video = videoRef.current;
       const canvas = renderCanvasRef.current;
 
-      if (!video || !canvas || !webcam.stream) {
+      if (!video || !canvas || !webcam.stream || !client) {
         return;
       }
 

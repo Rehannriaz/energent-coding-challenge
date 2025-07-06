@@ -5,6 +5,7 @@ import { AudioStreamer } from "../lib/gemini/audio-streamer";
 import { audioContext } from "../lib/gemini/utils";
 import VolMeterWorket from "../lib/gemini/worklets/vol-meter";
 import { LiveConnectConfig } from "@google/genai";
+import { AudioWorkletEvent } from "../types/audio";
 
 export type UseGeminiLiveResults = {
   client: GenAILiveClient;
@@ -39,8 +40,8 @@ export function useGeminiLive(options: LiveClientOptions): UseGeminiLiveResults 
         .then((audioCtx: AudioContext) => {
           audioStreamerRef.current = new AudioStreamer(audioCtx);
           audioStreamerRef.current
-            .addWorklet<any>("vumeter-out", VolMeterWorket, (ev: any) => {
-              setVolume(ev.data.volume);
+            .addWorklet("vumeter-out", VolMeterWorket, (ev: MessageEvent) => {
+              setVolume((ev as AudioWorkletEvent).data.volume);
             })
             .then(() => {
               // Successfully added worklet

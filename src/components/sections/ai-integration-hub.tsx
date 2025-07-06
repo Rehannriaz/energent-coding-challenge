@@ -22,6 +22,7 @@ import { useGeminiLiveContext } from "@/contexts/gemini-live-context";
 import { useWebcam } from "@/hooks/use-webcam";
 import { AudioRecorder } from "@/lib/gemini/audio-recorder";
 import classNames from "classnames";
+import { LiveServerContent, Part } from "@google/genai";
 
 export function AIIntegrationHub() {
   const [isRecording, setIsRecording] = useState(false);
@@ -45,6 +46,8 @@ export function AIIntegrationHub() {
   const [textLogs, setTextLogs] = useState<
     Array<{ timestamp: Date; type: string; message: string }>
   >([]);
+  const lastAudioLogTime = useRef<number>(0);
+  const lastVideoLogTime = useRef<number>(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const renderCanvasRef = useRef<HTMLCanvasElement>(null);
   const textLogsRef = useRef<HTMLDivElement>(null);
@@ -82,7 +85,13 @@ export function AIIntegrationHub() {
             data: base64,
           },
         ]);
-        addTextLog("audio.send", "Audio data sent to AI");
+        
+        // Throttle audio logging to once per second to avoid spam
+        const now = Date.now();
+        if (now - lastAudioLogTime.current > 1000) {
+          addTextLog("audio.send", "Audio data streaming to AI");
+          lastAudioLogTime.current = now;
+        }
       }
     };
 
@@ -124,7 +133,13 @@ export function AIIntegrationHub() {
         const base64 = canvas.toDataURL("image/jpeg", 1.0);
         const data = base64.slice(base64.indexOf(",") + 1);
         client.sendRealtimeInput([{ mimeType: "image/jpeg", data }]);
-        addTextLog("video.send", "Video frame sent to AI");
+        
+        // Throttle video logging to avoid spam (every 5 seconds)
+        const now = Date.now();
+        if (now - lastVideoLogTime.current > 5000) {
+          addTextLog("video.send", "Video frames streaming to AI");
+          lastVideoLogTime.current = now;
+        }
       }
 
       if (connected && webcam.stream) {
@@ -143,12 +158,12 @@ export function AIIntegrationHub() {
 
   // Handle AI content responses
   useEffect(() => {
-    const onContent = (data: any) => {
+    const onContent = (data: LiveServerContent) => {
       if (data.modelTurn && data.modelTurn.parts) {
-        const textParts = data.modelTurn.parts.filter((part: any) => part.text);
+        const textParts = data.modelTurn.parts.filter((part: Part) => part.text);
         if (textParts.length > 0) {
           const responseText = textParts
-            .map((part: any) => part.text)
+            .map((part: Part) => part.text)
             .join(" ");
           setGeminiMessages((prev) => [
             ...prev,

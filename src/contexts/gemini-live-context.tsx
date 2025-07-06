@@ -30,7 +30,7 @@ export const useGeminiLiveContext = () => {
     // Return a dummy context to prevent errors during loading or when provider is missing
     console.warn("GeminiLiveContext not found. This might be during loading or missing provider.");
     return {
-      client: null as any,
+      client: null,
       setConfig: () => {},
       config: {},
       model: "",

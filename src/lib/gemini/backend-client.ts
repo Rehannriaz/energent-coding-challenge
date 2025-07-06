@@ -1,9 +1,11 @@
 import { EventEmitter } from "eventemitter3";
+import { BackendMessage, GeminiMessageData, MessagePart, AudioPart } from "@/types/backend";
+import { AIContentData } from "@/types/ai";
 
 export interface BackendClientEventTypes {
   connected: () => void;
   disconnected: () => void;
-  content: (data: any) => void;
+  content: (data: AIContentData) => void;
   audio: (data: ArrayBuffer) => void;
   error: (error: string) => void;
   volume: (volume: number) => void;
@@ -66,7 +68,7 @@ export class BackendGeminiClient extends EventEmitter<BackendClientEventTypes> {
     this.emit('disconnected');
   }
 
-  private handleBackendMessage(data: any) {
+  private handleBackendMessage(data: BackendMessage) {
     switch (data.type) {
       case 'connected':
         this._connected = true;
@@ -79,16 +81,18 @@ export class BackendGeminiClient extends EventEmitter<BackendClientEventTypes> {
         break;
       
       case 'gemini-message':
-        this.processGeminiMessage(data.data);
+        if (data.data) {
+          this.processGeminiMessage(data.data);
+        }
         break;
       
       case 'error':
-        this.emit('error', data.error);
+        this.emit('error', data.error || 'Unknown error');
         break;
     }
   }
 
-  private processGeminiMessage(message: any) {
+  private processGeminiMessage(message: GeminiMessageData) {
     if (message.serverContent) {
       const { serverContent } = message;
       
@@ -107,13 +111,13 @@ export class BackendGeminiClient extends EventEmitter<BackendClientEventTypes> {
 
         // Handle audio parts
         const audioParts = parts.filter(
-          (p: any) => p.inlineData && p.inlineData.mimeType?.startsWith("audio/pcm")
+          (p: MessagePart): p is AudioPart => p.inlineData && p.inlineData.mimeType?.startsWith("audio/pcm") || false
         );
-        const base64s = audioParts.map((p: any) => p.inlineData?.data);
+        const base64s = audioParts.map((p: AudioPart) => p.inlineData?.data);
 
         // Handle other parts (text)
         const otherParts = parts.filter(
-          (p: any) => !p.inlineData || !p.inlineData.mimeType?.startsWith("audio/pcm")
+          (p: MessagePart) => !p.inlineData || !p.inlineData.mimeType?.startsWith("audio/pcm")
         );
 
         // Emit audio data
