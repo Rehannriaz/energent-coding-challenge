@@ -68,7 +68,7 @@ export function checkAudioSupport(): { supported: boolean; missing: string[] } {
     missing.push('getUserMedia');
   }
   
-  if (!window.AudioContext && !window.webkitAudioContext) {
+  if (!window.AudioContext && !(window as any).webkitAudioContext) {
     missing.push('AudioContext');
   }
   

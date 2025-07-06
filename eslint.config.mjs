@@ -20,7 +20,8 @@ const eslintConfig = [
       "node_modules/**",
       "out/**",
       "dist/**",
-      "build/**"
+      "build/**",
+      "CODE_FILES/**"
     ]
   },
   {
