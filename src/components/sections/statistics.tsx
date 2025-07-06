@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { motion, useInView } from "framer-motion"
 
@@ -15,12 +15,12 @@ export function Statistics() {
     countries: 0,
   })
 
-  const finalCounts = {
+  const finalCounts = useMemo(() => ({
     users: 2500000,
     requests: 50000000,
     uptime: 99.9,
     countries: 150,
-  }
+  }), [])
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -65,7 +65,7 @@ export function Statistics() {
   }
 
   useEffect(() => {
-    if (!isInView) return
+    if (!isInView) {return}
     
     const duration = 2500 // 2.5 seconds
     const steps = 60
@@ -91,26 +91,26 @@ export function Statistics() {
     }, stepDuration)
 
     return () => clearInterval(timer)
-  }, [isInView])
+  }, [isInView, finalCounts])
 
   const stats = [
     {
-      number: counts.users.toLocaleString() + "+",
+      number: `${counts.users.toLocaleString()  }+`,
       label: "Active Users",
       description: "Developers and businesses trust our platform",
     },
     {
-      number: counts.requests.toLocaleString() + "+",
+      number: `${counts.requests.toLocaleString()  }+`,
       label: "API Requests",
       description: "Processed monthly across all services",
     },
     {
-      number: counts.uptime.toFixed(1) + "%",
+      number: `${counts.uptime.toFixed(1)  }%`,
       label: "Uptime",
       description: "Guaranteed service availability",
     },
     {
-      number: counts.countries + "+",
+      number: `${counts.countries  }+`,
       label: "Countries",
       description: "Global presence and support",
     },

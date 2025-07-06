@@ -85,7 +85,7 @@ export function GeminiVoiceAI() {
     }
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutId) {clearTimeout(timeoutId);}
     };
   }, [connected, webcam.stream, client]);
 

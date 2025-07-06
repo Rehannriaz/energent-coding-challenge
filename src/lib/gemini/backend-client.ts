@@ -1,5 +1,10 @@
 import { EventEmitter } from "eventemitter3";
-import { BackendMessage, GeminiMessageData, MessagePart, AudioPart } from "@/types/backend";
+import {
+  BackendMessage,
+  GeminiMessageData,
+  MessagePart,
+  AudioPart,
+} from "@/types/backend";
 import { AIContentData } from "@/types/ai";
 
 export interface BackendClientEventTypes {
@@ -31,10 +36,10 @@ export class BackendGeminiClient extends EventEmitter<BackendClientEventTypes> {
 
     try {
       // Connect to the backend SSE stream
-      this.eventSource = new EventSource('/api/ai?stream=gemini-live');
+      this.eventSource = new EventSource("/api/ai?stream=gemini-live");
 
       this.eventSource.onopen = () => {
-        console.log('Connected to backend Gemini Live stream');
+        console.warn("Connected to backend Gemini Live stream");
       };
 
       this.eventSource.onmessage = (event) => {
@@ -42,20 +47,19 @@ export class BackendGeminiClient extends EventEmitter<BackendClientEventTypes> {
           const data = JSON.parse(event.data);
           this.handleBackendMessage(data);
         } catch (error) {
-          console.error('Error parsing SSE message:', error);
+          console.error("Error parsing SSE message:", error);
         }
       };
 
       this.eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error);
-        this.emit('error', 'Connection error');
+        console.error("SSE connection error:", error);
+        this.emit("error", "Connection error");
         this._connected = false;
-        this.emit('disconnected');
+        this.emit("disconnected");
       };
-
     } catch (error) {
-      console.error('Failed to connect to backend:', error);
-      this.emit('error', 'Failed to connect to backend');
+      console.error("Failed to connect to backend:", error);
+      this.emit("error", "Failed to connect to backend");
     }
   }
 
@@ -65,29 +69,29 @@ export class BackendGeminiClient extends EventEmitter<BackendClientEventTypes> {
       this.eventSource = null;
     }
     this._connected = false;
-    this.emit('disconnected');
+    this.emit("disconnected");
   }
 
   private handleBackendMessage(data: BackendMessage) {
     switch (data.type) {
-      case 'connected':
+      case "connected":
         this._connected = true;
-        this.emit('connected');
+        this.emit("connected");
         break;
-      
-      case 'disconnected':
+
+      case "disconnected":
         this._connected = false;
-        this.emit('disconnected');
+        this.emit("disconnected");
         break;
-      
-      case 'gemini-message':
+
+      case "gemini-message":
         if (data.data) {
           this.processGeminiMessage(data.data);
         }
         break;
-      
-      case 'error':
-        this.emit('error', data.error || 'Unknown error');
+
+      case "error":
+        this.emit("error", data.error || "Unknown error");
         break;
     }
   }
@@ -95,52 +99,55 @@ export class BackendGeminiClient extends EventEmitter<BackendClientEventTypes> {
   private processGeminiMessage(message: GeminiMessageData) {
     if (message.serverContent) {
       const { serverContent } = message;
-      
+
       if ("interrupted" in serverContent) {
         // Handle interruption
         return;
       }
-      
+
       if ("turnComplete" in serverContent) {
         // Handle turn completion
         return;
       }
 
       if ("modelTurn" in serverContent) {
-        let parts = serverContent.modelTurn?.parts || [];
+        const parts = serverContent.modelTurn?.parts || [];
 
         // Handle audio parts
         const audioParts = parts.filter(
-          (p: MessagePart): p is AudioPart => p.inlineData && p.inlineData.mimeType?.startsWith("audio/pcm") || false
+          (p: MessagePart): p is AudioPart =>
+            (p.inlineData && p.inlineData.mimeType?.startsWith("audio/pcm")) ||
+            false
         );
         const base64s = audioParts.map((p: AudioPart) => p.inlineData?.data);
 
         // Handle other parts (text)
         const otherParts = parts.filter(
-          (p: MessagePart) => !p.inlineData || !p.inlineData.mimeType?.startsWith("audio/pcm")
+          (p: MessagePart) =>
+            !p.inlineData || !p.inlineData.mimeType?.startsWith("audio/pcm")
         );
 
         // Emit audio data
         base64s.forEach((b64: string) => {
           if (b64) {
             const data = this.base64ToArrayBuffer(b64);
-            this.emit('audio', data);
-            
+            this.emit("audio", data);
+
             // Simulate volume for visualization
             this._volume = Math.random() * 0.5 + 0.2;
-            this.emit('volume', this._volume);
-            
+            this.emit("volume", this._volume);
+
             // Reset volume after a short delay
             setTimeout(() => {
               this._volume = 0;
-              this.emit('volume', this._volume);
+              this.emit("volume", this._volume);
             }, 100);
           }
         });
 
         if (otherParts.length > 0) {
           const content = { modelTurn: { parts: otherParts } };
-          this.emit('content', content);
+          this.emit("content", content);
         }
       }
     }
@@ -157,27 +164,27 @@ export class BackendGeminiClient extends EventEmitter<BackendClientEventTypes> {
 
   async sendRealtimeInput(chunks: Array<{ mimeType: string; data: string }>) {
     if (!this._connected) {
-      console.warn('Cannot send data: not connected to backend');
+      console.warn("Cannot send data: not connected to backend");
       return;
     }
 
     try {
       // Send audio/video data to backend
       for (const chunk of chunks) {
-        await fetch('/api/ai', {
-          method: 'POST',
+        await fetch("/api/ai", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            type: 'realtime-input',
-            data: chunk
-          })
+            type: "realtime-input",
+            data: chunk,
+          }),
         });
       }
     } catch (error) {
-      console.error('Error sending realtime input:', error);
-      this.emit('error', 'Failed to send data');
+      console.error("Error sending realtime input:", error);
+      this.emit("error", "Failed to send data");
     }
   }
 }

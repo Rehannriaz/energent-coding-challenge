@@ -61,7 +61,7 @@ export const audioContext: (
         map.set(options.id, ctx);
       }
       return ctx;
-    } catch (e) {
+    } catch (_e) {
       await didInteract;
       if (options?.id && map.has(options.id)) {
         const ctx = map.get(options.id);
@@ -82,8 +82,8 @@ export function base64ToArrayBuffer(base64: string) {
   if (typeof window === "undefined") {
     throw new Error("base64ToArrayBuffer is not available in server environment");
   }
-  var binaryString = window.atob(base64);
-  var bytes = new Uint8Array(binaryString.length);
+  const binaryString = window.atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
   }

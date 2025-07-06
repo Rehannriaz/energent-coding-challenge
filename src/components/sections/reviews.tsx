@@ -118,7 +118,7 @@ export function Reviews() {
             <span className="text-gradient">What Our Users Say</span>
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            Don't just take our word for it. Here's what industry leaders are saying about our platform.
+            Don&apos;t just take our word for it. Here&apos;s what industry leaders are saying about our platform.
           </p>
         </motion.div>
 
@@ -167,7 +167,7 @@ export function Reviews() {
                     duration: 0.5
                   }}
                 >
-                  "{review.review}"
+                  &ldquo;{review.review}&rdquo;
                 </motion.p>
 
                 <div className="flex items-center">

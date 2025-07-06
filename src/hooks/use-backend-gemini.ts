@@ -37,7 +37,7 @@ export function useBackendGemini(): UseBackendGeminiResults {
       console.error("Backend Gemini error:", error);
     };
 
-    const stopAudioStreamer = () => audioStreamerRef.current?.stop();
+    const _stopAudioStreamer = () => audioStreamerRef.current?.stop();
 
     const onAudio = (data: ArrayBuffer) =>
       audioStreamerRef.current?.addPCM16(new Uint8Array(data));

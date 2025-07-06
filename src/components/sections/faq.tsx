@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { Card } from "@/components/ui/card"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import { motion, useInView, AnimatePresence } from "framer-motion"
 
 export function FAQ() {

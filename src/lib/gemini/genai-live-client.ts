@@ -196,7 +196,7 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
         this.log(`server.content`, message);
       }
     } else {
-      console.log("received unmatched message", message);
+      console.warn("received unmatched message", message);
     }
   }
 
@@ -215,14 +215,14 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
         break;
       }
     }
-    const message =
-      hasAudio && hasVideo
-        ? "audio + video"
-        : hasAudio
-        ? "audio"
-        : hasVideo
-        ? "video"
-        : "unknown";
+    let message = "unknown";
+    if (hasAudio && hasVideo) {
+      message = "audio + video";
+    } else if (hasAudio) {
+      message = "audio";
+    } else if (hasVideo) {
+      message = "video";
+    }
     this.log(`client.realtimeInput`, message);
   }
 
