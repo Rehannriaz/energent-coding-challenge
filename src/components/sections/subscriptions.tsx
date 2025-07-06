@@ -1,44 +1,44 @@
-"use client"
+"use client";
 
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Check, Star } from "lucide-react"
-import { motion, useInView } from "framer-motion"
-import { useRef } from "react"
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Check, Star } from "lucide-react";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 export function Subscriptions() {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
-  
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.2 });
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
         staggerChildren: 0.2,
-        delayChildren: 0.3
-      }
-    }
-  }
-  
-  const itemVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 50,
-      scale: 0.9
+        delayChildren: 0.3,
+      },
     },
-    visible: { 
-      opacity: 1, 
+  };
+
+  const itemVariants = {
+    hidden: {
+      opacity: 0,
+      y: 50,
+      scale: 0.9,
+    },
+    visible: {
+      opacity: 1,
       y: 0,
       scale: 1,
       transition: {
         type: "spring" as const,
         damping: 20,
-        stiffness: 100
-      }
-    }
-  }
-  
+        stiffness: 100,
+      },
+    },
+  };
+
   const headerVariants = {
     hidden: { opacity: 0, y: -30 },
     visible: {
@@ -47,17 +47,17 @@ export function Subscriptions() {
       transition: {
         type: "spring" as const,
         damping: 20,
-        stiffness: 100
-      }
-    }
-  }
+        stiffness: 100,
+      },
+    },
+  };
 
   const plans = [
     {
       name: "Starter",
       price: "$29",
       period: "/month",
-      description: "Perfect for small teams and startups",
+      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
       features: [
         "10,000 API calls/month",
         "Basic AI models",
@@ -71,7 +71,7 @@ export function Subscriptions() {
       name: "Professional",
       price: "$99",
       period: "/month",
-      description: "Ideal for growing businesses",
+      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
       features: [
         "100,000 API calls/month",
         "Advanced AI models",
@@ -86,7 +86,7 @@ export function Subscriptions() {
       name: "Enterprise",
       price: "Custom",
       period: "",
-      description: "For large-scale operations",
+      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
       features: [
         "Unlimited API calls",
         "All AI models",
@@ -98,12 +98,12 @@ export function Subscriptions() {
       ],
       popular: false,
     },
-  ]
+  ];
 
   return (
     <section id="pricing" className="py-24 bg-[#0a0a0a]" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div 
+        <motion.div
           className="text-center mb-16"
           variants={headerVariants}
           initial="hidden"
@@ -113,11 +113,12 @@ export function Subscriptions() {
             <span className="text-gradient">Subscription Plans</span>
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            Choose the perfect plan for your needs. Scale up or down anytime with no hidden fees.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua.
           </p>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"
           variants={containerVariants}
           initial="hidden"
@@ -127,10 +128,10 @@ export function Subscriptions() {
             <motion.div
               key={`plan-${plan.name}-${index}`}
               variants={itemVariants}
-              whileHover={{ 
+              whileHover={{
                 scale: plan.popular ? 1.08 : 1.05,
                 y: -10,
-                transition: { duration: 0.3 }
+                transition: { duration: 0.3 },
               }}
               whileTap={{ scale: 0.95 }}
             >
@@ -142,16 +143,22 @@ export function Subscriptions() {
                 } backdrop-blur-sm transition-all duration-300 h-full`}
               >
                 {plan.popular && (
-                  <motion.div 
+                  <motion.div
                     className="absolute -top-4 left-1/2 transform -translate-x-1/2"
                     initial={{ opacity: 0, y: -20 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
+                    animate={
+                      isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }
+                    }
                     transition={{ delay: 0.5, duration: 0.3 }}
                   >
                     <div className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center">
                       <motion.div
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
                       >
                         <Star className="w-4 h-4 mr-1" />
                       </motion.div>
@@ -163,15 +170,19 @@ export function Subscriptions() {
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                   <div className="flex items-baseline justify-center mb-4">
-                    <motion.span 
+                    <motion.span
                       className="text-4xl font-bold"
                       initial={{ scale: 0.5, opacity: 0 }}
-                      animate={isInView ? { scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 }}
-                      transition={{ 
+                      animate={
+                        isInView
+                          ? { scale: 1, opacity: 1 }
+                          : { scale: 0.5, opacity: 0 }
+                      }
+                      transition={{
                         delay: index * 0.2 + 0.5,
                         type: "spring" as const,
                         damping: 15,
-                        stiffness: 100
+                        stiffness: 100,
                       }}
                     >
                       {plan.price}
@@ -183,24 +194,30 @@ export function Subscriptions() {
 
                 <ul className="space-y-4 mb-8 flex-grow">
                   {plan.features.map((feature, featureIndex) => (
-                    <motion.li 
-                      key={`${plan.name}-feature-${featureIndex}`} 
+                    <motion.li
+                      key={`${plan.name}-feature-${featureIndex}`}
                       className="flex items-center"
                       initial={{ opacity: 0, x: -20 }}
-                      animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-                      transition={{ 
+                      animate={
+                        isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }
+                      }
+                      transition={{
                         delay: index * 0.1 + featureIndex * 0.1 + 0.7,
-                        duration: 0.3
+                        duration: 0.3,
                       }}
                     >
                       <motion.div
                         initial={{ scale: 0, rotate: -180 }}
-                        animate={isInView ? { scale: 1, rotate: 0 } : { scale: 0, rotate: -180 }}
-                        transition={{ 
+                        animate={
+                          isInView
+                            ? { scale: 1, rotate: 0 }
+                            : { scale: 0, rotate: -180 }
+                        }
+                        transition={{
                           delay: index * 0.1 + featureIndex * 0.1 + 0.8,
                           type: "spring" as const,
                           damping: 10,
-                          stiffness: 100
+                          stiffness: 100,
                         }}
                       >
                         <Check className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" />
@@ -217,11 +234,15 @@ export function Subscriptions() {
                 >
                   <Button
                     className={`w-full ${
-                      plan.popular ? "bg-blue-600 hover:bg-blue-700" : "bg-white text-black hover:bg-gray-200"
+                      plan.popular
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : "bg-white text-black hover:bg-gray-200"
                     } transition-colors duration-200`}
                     size="lg"
                   >
-                    {plan.name === "Enterprise" ? "Contact Sales" : "Get Started"}
+                    {plan.name === "Enterprise"
+                      ? "Contact Sales"
+                      : "Get Started"}
                   </Button>
                 </motion.div>
               </Card>
@@ -230,5 +251,5 @@ export function Subscriptions() {
         </motion.div>
       </div>
     </section>
-  )
+  );
 }

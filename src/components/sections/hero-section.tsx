@@ -138,9 +138,9 @@ export function HeroSection() {
           variants={fadeInUp}
           transition={{ ...smoothTransition, delay: 0.4 }}
         >
-          Experience the future of artificial intelligence with our cutting-edge
-          solutions. Automate, optimize, and revolutionize your workflow with
-          intelligent technology.
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
+          eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
+          minim veniam, quis nostrud exercitation ullamco laboris.
         </motion.p>
 
         <motion.div

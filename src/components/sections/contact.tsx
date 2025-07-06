@@ -94,8 +94,8 @@ export function Contact() {
             <span className="text-gradient">Let&apos;s Talk</span>
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            Ready to transform your business with AI? Get in touch with our team
-            to discuss your needs.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua.
           </p>
         </motion.div>
 

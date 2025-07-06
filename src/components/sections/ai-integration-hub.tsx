@@ -24,6 +24,7 @@ import { AudioRecorder } from "@/lib/gemini/audio-recorder";
 import classNames from "classnames";
 import { LiveServerContent, Part } from "@google/genai";
 
+// eslint-disable-next-line max-lines-per-function, complexity
 export function AIIntegrationHub() {
   const [isRecording, setIsRecording] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<"gemini" | "openai">(
@@ -85,7 +86,7 @@ export function AIIntegrationHub() {
             data: base64,
           },
         ]);
-        
+
         // Throttle audio logging to once per second to avoid spam
         const now = Date.now();
         if (now - lastAudioLogTime.current > 1000) {
@@ -133,7 +134,7 @@ export function AIIntegrationHub() {
         const base64 = canvas.toDataURL("image/jpeg", 1.0);
         const data = base64.slice(base64.indexOf(",") + 1);
         client.sendRealtimeInput([{ mimeType: "image/jpeg", data }]);
-        
+
         // Throttle video logging to avoid spam (every 5 seconds)
         const now = Date.now();
         if (now - lastVideoLogTime.current > 5000) {
@@ -152,7 +153,9 @@ export function AIIntegrationHub() {
     }
 
     return () => {
-      if (timeoutId) {clearTimeout(timeoutId);}
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [connected, webcam.stream, client]);
 
@@ -160,7 +163,9 @@ export function AIIntegrationHub() {
   useEffect(() => {
     const onContent = (data: LiveServerContent) => {
       if (data.modelTurn && data.modelTurn.parts) {
-        const textParts = data.modelTurn.parts.filter((part: Part) => part.text);
+        const textParts = data.modelTurn.parts.filter(
+          (part: Part) => part.text
+        );
         if (textParts.length > 0) {
           const responseText = textParts
             .map((part: Part) => part.text)
@@ -279,8 +284,8 @@ export function AIIntegrationHub() {
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ ...smoothTransition, delay: 0.4 }}
           >
-            Experience real-time AI conversations with voice interaction. Switch
-            between Google Gemini and OpenAI seamlessly.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua.
           </motion.p>
         </motion.div>
 
@@ -626,7 +631,7 @@ export function AIIntegrationHub() {
                 icon: Zap,
                 title: "Real-time Processing",
                 description:
-                  "Experience lightning-fast AI responses with real-time voice processing and natural language understanding.",
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                 color: "blue",
                 bgColor: "bg-blue-600/20",
               },
@@ -634,7 +639,7 @@ export function AIIntegrationHub() {
                 icon: Settings,
                 title: "Multi-Provider Support",
                 description:
-                  "Switch seamlessly between Google Gemini and OpenAI models to find the perfect AI assistant for your needs.",
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                 color: "green",
                 bgColor: "bg-green-600/20",
               },
@@ -642,7 +647,7 @@ export function AIIntegrationHub() {
                 icon: MessageSquare,
                 title: "Natural Conversations",
                 description:
-                  "Engage in natural, flowing conversations with advanced context awareness and memory capabilities.",
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                 color: "purple",
                 bgColor: "bg-purple-600/20",
               },
