@@ -9,7 +9,8 @@
       "Bash(npm run build:*)",
       "Bash(rg:*)",
       "Bash(npm run lint)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
