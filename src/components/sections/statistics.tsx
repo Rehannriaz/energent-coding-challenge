@@ -17,8 +17,8 @@ export function Statistics() {
 
   const finalCounts = useMemo(
     () => ({
-      users: 2500000,
-      requests: 50000000,
+      users: 200,
+      requests: 5000,
       uptime: 99.9,
       countries: 150,
     }),

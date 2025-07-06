@@ -23,6 +23,13 @@ export function HeroSection() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
+  const scrollToAIHub = () => {
+    const aiHubElement = document.getElementById("ai-hub");
+    if (aiHubElement) {
+      aiHubElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const particleVariants = {
     animate: {
       y: [0, -100, 0],
@@ -152,6 +159,7 @@ export function HeroSection() {
             <Button
               size="lg"
               className="bg-white text-black hover:bg-gray-200 transition-all duration-300 group"
+              onClick={scrollToAIHub}
             >
               Get Started Free
               <motion.div
@@ -172,6 +180,7 @@ export function HeroSection() {
               size="lg"
               variant="outline"
               className="border-white/20 text-white hover:bg-white/10 bg-transparent"
+              onClick={scrollToAIHub}
             >
               Watch Demo
             </Button>

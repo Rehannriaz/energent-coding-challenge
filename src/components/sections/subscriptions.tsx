@@ -10,6 +10,13 @@ export function Subscriptions() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
 
+  const scrollToAIHub = () => {
+    const aiHubElement = document.getElementById("ai-hub");
+    if (aiHubElement) {
+      aiHubElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -239,6 +246,7 @@ export function Subscriptions() {
                         : "bg-white text-black hover:bg-gray-200"
                     } transition-colors duration-200`}
                     size="lg"
+                    onClick={plan.name === "Enterprise" ? undefined : scrollToAIHub}
                   >
                     {plan.name === "Enterprise"
                       ? "Contact Sales"

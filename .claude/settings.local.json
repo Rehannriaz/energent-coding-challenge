@@ -12,7 +12,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(grep:*)",
       "Bash(find:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }

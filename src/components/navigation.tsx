@@ -18,6 +18,14 @@ export function Navigation() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  const scrollToAIHub = () => {
+    const aiHubElement = document.getElementById("ai-hub");
+    if (aiHubElement) {
+      aiHubElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    setIsOpen(false); // Close mobile menu if open
+  }
+
   const navItems = [
     { name: "Home", href: "#hero" },
     { name: "AI Hub", href: "#ai-hub" },
@@ -78,7 +86,10 @@ export function Navigation() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Button className="bg-white text-black hover:bg-gray-200 transition-colors duration-200">
+              <Button 
+                className="bg-white text-black hover:bg-gray-200 transition-colors duration-200"
+                onClick={scrollToAIHub}
+              >
                 Get Started
               </Button>
             </motion.div>
@@ -136,7 +147,12 @@ export function Navigation() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: navItems.length * 0.1 }}
                 >
-                  <Button className="w-full bg-white text-black hover:bg-gray-200">Get Started</Button>
+                  <Button 
+                    className="w-full bg-white text-black hover:bg-gray-200"
+                    onClick={scrollToAIHub}
+                  >
+                    Get Started
+                  </Button>
                 </motion.div>
               </div>
             </motion.div>
