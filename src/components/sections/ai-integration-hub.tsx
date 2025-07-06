@@ -4,7 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { motion, useInView } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Mic, MicOff, MessageSquare, Settings, Zap, Video, VideoOff } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  MessageSquare,
+  Settings,
+  Zap,
+  Video,
+  VideoOff,
+} from "lucide-react";
 import { useAI } from "@/components/providers/ai-provider";
 import {
   hoverScale,
@@ -20,28 +28,47 @@ export function AIIntegrationHub() {
   const [selectedProvider, setSelectedProvider] = useState<"gemini" | "openai">(
     "gemini"
   );
-  const { startConversation, stopConversation, isConnected, messages } =
-    useAI();
+  const { startConversation, stopConversation, isConnected } = useAI();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  
+
   // Gemini Voice AI Integration
-  const { client, connected, connect, disconnect, volume } = useGeminiLiveContext();
+  const { client, connected, connect, disconnect, volume } =
+    useGeminiLiveContext();
   const webcam = useWebcam();
   const [muted, setMuted] = useState(false);
   const [audioRecorder] = useState(() => new AudioRecorder());
   const [inVolume, setInVolume] = useState(0);
-  const [geminiMessages, setGeminiMessages] = useState<Array<{role: "user" | "assistant", content: string}>>([]);
+  const [, setGeminiMessages] = useState<
+    Array<{ role: "user" | "assistant"; content: string }>
+  >([]);
+  const [textLogs, setTextLogs] = useState<
+    Array<{ timestamp: Date; type: string; message: string }>
+  >([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const renderCanvasRef = useRef<HTMLCanvasElement>(null);
-  
+  const textLogsRef = useRef<HTMLDivElement>(null);
+
   // Check if Gemini is available
   const geminiAvailable = Boolean(client);
+
+  // Helper function to add text logs
+  const addTextLog = (type: string, message: string) => {
+    setTextLogs((prev) => [...prev, { timestamp: new Date(), type, message }]);
+  };
+
+  // Auto-scroll function for text logs
+  useEffect(() => {
+    if (textLogsRef.current) {
+      textLogsRef.current.scrollTop = textLogsRef.current.scrollHeight;
+    }
+  }, [textLogs]);
 
   // Set up video stream
   useEffect(() => {
     if (videoRef.current && webcam.stream) {
       videoRef.current.srcObject = webcam.stream;
+      addTextLog("video.stream", "Video stream connected");
     }
   }, [webcam.stream]);
 
@@ -55,13 +82,20 @@ export function AIIntegrationHub() {
             data: base64,
           },
         ]);
+        addTextLog("audio.send", "Audio data sent to AI");
       }
     };
 
     if (connected && !muted && audioRecorder) {
       audioRecorder.on("data", onData).on("volume", setInVolume).start();
+      addTextLog("audio.start", "Audio recording started");
     } else {
       audioRecorder.stop();
+      if (connected && muted) {
+        addTextLog("audio.muted", "Audio recording muted");
+      } else if (!connected) {
+        addTextLog("audio.stop", "Audio recording stopped");
+      }
     }
 
     return () => {
@@ -84,12 +118,13 @@ export function AIIntegrationHub() {
       const ctx = canvas.getContext("2d")!;
       canvas.width = video.videoWidth * 0.25;
       canvas.height = video.videoHeight * 0.25;
-      
+
       if (canvas.width + canvas.height > 0) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const base64 = canvas.toDataURL("image/jpeg", 1.0);
         const data = base64.slice(base64.indexOf(",") + 1);
         client.sendRealtimeInput([{ mimeType: "image/jpeg", data }]);
+        addTextLog("video.send", "Video frame sent to AI");
       }
 
       if (connected && webcam.stream) {
@@ -112,8 +147,19 @@ export function AIIntegrationHub() {
       if (data.modelTurn && data.modelTurn.parts) {
         const textParts = data.modelTurn.parts.filter((part: any) => part.text);
         if (textParts.length > 0) {
-          const responseText = textParts.map((part: any) => part.text).join(' ');
-          setGeminiMessages(prev => [...prev, { role: "assistant", content: responseText }]);
+          const responseText = textParts
+            .map((part: any) => part.text)
+            .join(" ");
+          setGeminiMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: responseText },
+          ]);
+          addTextLog(
+            "ai.response",
+            `AI responded: ${responseText.substring(0, 50)}${
+              responseText.length > 50 ? "..." : ""
+            }`
+          );
         }
       }
     };
@@ -132,18 +178,26 @@ export function AIIntegrationHub() {
   const handleToggleRecording = async () => {
     if (selectedProvider === "gemini") {
       if (connected) {
+        addTextLog("system.disconnect", "Disconnecting from Gemini AI");
         await disconnect();
         setIsRecording(false);
       } else {
         setGeminiMessages([]); // Clear messages when starting new session
+        setTextLogs([]); // Clear logs when starting new session
+        addTextLog("system.connect", "Connecting to Gemini AI");
         await connect();
         setIsRecording(true);
       }
     } else {
       if (isRecording) {
+        addTextLog("system.stop", "Stopping OpenAI conversation");
         stopConversation();
         setIsRecording(false);
       } else {
+        addTextLog(
+          "system.start",
+          `Starting conversation with ${selectedProvider}`
+        );
         startConversation(selectedProvider);
         setIsRecording(true);
       }
@@ -156,20 +210,29 @@ export function AIIntegrationHub() {
 
   const handleVideoToggle = async () => {
     if (webcam.isStreaming) {
+      addTextLog("video.stop", "Stopping video stream");
       webcam.stop();
     } else {
+      addTextLog("video.start", "Starting video stream");
       await webcam.start();
     }
   };
 
-  const isGeminiConnected = selectedProvider === "gemini" ? connected : isConnected;
-  const isCurrentlyRecording = selectedProvider === "gemini" ? connected && !muted : isRecording;
+  const isGeminiConnected =
+    selectedProvider === "gemini" ? connected : isConnected;
+  const isCurrentlyRecording =
+    selectedProvider === "gemini" ? connected && !muted : isRecording;
 
   // Clear messages when switching providers
   useEffect(() => {
     if (selectedProvider === "gemini") {
       setGeminiMessages([]);
     }
+    setTextLogs([]);
+    addTextLog(
+      "system.provider",
+      `Switched to ${selectedProvider.toUpperCase()}`
+    );
   }, [selectedProvider]);
 
   return (
@@ -234,7 +297,11 @@ export function AIIntegrationHub() {
                         selectedProvider === "gemini" ? "default" : "outline"
                       }
                       onClick={() => setSelectedProvider("gemini")}
-                      className="text-xs"
+                      className={`text-xs ${
+                        selectedProvider === "gemini"
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : "text-gray-400 hover:text-white"
+                      }`}
                     >
                       Gemini
                     </Button>
@@ -249,7 +316,11 @@ export function AIIntegrationHub() {
                         selectedProvider === "openai" ? "default" : "outline"
                       }
                       onClick={() => setSelectedProvider("openai")}
-                      className="text-xs"
+                      className={`text-xs ${
+                        selectedProvider === "openai"
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : "text-gray-400 hover:text-white"
+                      }`}
                     >
                       OpenAI
                     </Button>
@@ -278,14 +349,11 @@ export function AIIntegrationHub() {
                       className={classNames(
                         "w-full h-full rounded-lg border-2 border-purple-500/30 bg-gray-900 object-cover",
                         {
-                          "hidden": !webcam.stream,
+                          hidden: !webcam.stream,
                         }
                       )}
                     />
-                    <canvas
-                      ref={renderCanvasRef}
-                      className="hidden"
-                    />
+                    <canvas ref={renderCanvasRef} className="hidden" />
                     {!webcam.stream && (
                       <div className="w-full h-full rounded-lg border-2 border-purple-500/30 bg-gray-900 flex items-center justify-center">
                         <VideoOff className="w-8 h-8 text-gray-500" />
@@ -301,9 +369,7 @@ export function AIIntegrationHub() {
                   className="flex items-center justify-center space-x-4 mb-6"
                   initial={{ opacity: 0, y: 10 }}
                   animate={
-                    isInView
-                      ? { opacity: 1, y: 0 }
-                      : { opacity: 0, y: 10 }
+                    isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }
                   }
                   transition={{ ...smoothTransition, delay: 1.0 }}
                 >
@@ -330,59 +396,56 @@ export function AIIntegrationHub() {
                 </motion.div>
               )}
 
-              {/* Chat Messages */}
+              {/* Text Activity Log */}
               <motion.div
-                className="h-64 bg-black/20 rounded-lg p-4 mb-6 overflow-y-auto"
+                className="h-32 bg-black/30 rounded-lg p-3 mb-6 overflow-y-auto border border-gray-700/50"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={
                   isInView
                     ? { opacity: 1, scale: 1 }
                     : { opacity: 0, scale: 0.95 }
                 }
-                transition={{ ...smoothTransition, delay: 1.0 }}
+                transition={{ ...smoothTransition, delay: 1.1 }}
+                ref={textLogsRef}
               >
-{(selectedProvider === "gemini" ? geminiMessages : messages).length === 0 ? (
-                  <motion.div
-                    className="flex items-center justify-center h-full text-gray-500"
-                    initial={{ opacity: 0 }}
-                    animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-                    transition={{ delay: 1.2 }}
-                  >
-                    <motion.div
-                      animate={{ rotate: [0, 10, -10, 0] }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    >
-                      <MessageSquare className="w-8 h-8 mr-2" />
-                    </motion.div>
-                    {selectedProvider === "gemini" 
-                      ? "Connect to start voice and video conversation" 
-                      : "Start a conversation to see messages here"}
-                  </motion.div>
+                <div className="text-xs text-gray-500 mb-2 font-mono">
+                  Activity Log:
+                </div>
+                {textLogs.length === 0 ? (
+                  <div className="flex items-center justify-center h-20 text-gray-600 text-sm">
+                    Activity will appear here when you connect...
+                  </div>
                 ) : (
-                  <div className="space-y-4">
-                    {(selectedProvider === "gemini" ? geminiMessages : messages).map((message, index) => (
+                  <div className="space-y-1">
+                    {textLogs.map((log, index) => (
                       <motion.div
-                        key={`ai-message-${index}`}
-                        className={`p-3 rounded-lg ${
-                          message.role === "user"
-                            ? "bg-blue-600/20 ml-8"
-                            : "bg-gray-600/20 mr-8"
-                        }`}
-                        initial={{
-                          opacity: 0,
-                          x: message.role === "user" ? 20 : -20,
-                        }}
+                        key={`log-${index}`}
+                        className="flex items-start gap-2 text-xs font-mono"
+                        initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
+                        transition={{ delay: index * 0.05 }}
                       >
-                        <div className="text-sm text-gray-300 mb-1">
-                          {message.role === "user" ? "You" : "AI Assistant"}
-                        </div>
-                        <div>{message.content}</div>
+                        <span className="text-gray-500 shrink-0">
+                          {log.timestamp.toLocaleTimeString().slice(0, -3)}
+                        </span>
+                        <span
+                          className={`shrink-0 ${
+                            log.type.includes("system")
+                              ? "text-blue-400"
+                              : log.type.includes("audio")
+                              ? "text-green-400"
+                              : log.type.includes("video")
+                              ? "text-purple-400"
+                              : log.type.includes("ai")
+                              ? "text-yellow-400"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {log.type}
+                        </span>
+                        <span className="text-gray-300 break-words">
+                          {log.message}
+                        </span>
                       </motion.div>
                     ))}
                   </div>
@@ -416,7 +479,11 @@ export function AIIntegrationHub() {
                         )}
                         disabled={!connected}
                       >
-                        {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                        {muted ? (
+                          <MicOff className="w-5 h-5" />
+                        ) : (
+                          <Mic className="w-5 h-5" />
+                        )}
                       </Button>
                     </motion.div>
 
@@ -451,7 +518,9 @@ export function AIIntegrationHub() {
                   whileTap={{ scale: 0.9 }}
                   animate={isCurrentlyRecording ? { scale: [1, 1.1, 1] } : {}}
                   transition={
-                    isCurrentlyRecording ? { duration: 1, repeat: Infinity } : {}
+                    isCurrentlyRecording
+                      ? { duration: 1, repeat: Infinity }
+                      : {}
                   }
                 >
                   <Button
@@ -464,9 +533,13 @@ export function AIIntegrationHub() {
                     }`}
                   >
                     <motion.div
-                      animate={isCurrentlyRecording ? { rotate: [0, 10, -10, 0] } : {}}
+                      animate={
+                        isCurrentlyRecording ? { rotate: [0, 10, -10, 0] } : {}
+                      }
                       transition={
-                        isCurrentlyRecording ? { duration: 0.5, repeat: Infinity } : {}
+                        isCurrentlyRecording
+                          ? { duration: 0.5, repeat: Infinity }
+                          : {}
                       }
                     >
                       {selectedProvider === "gemini" ? (
@@ -475,17 +548,15 @@ export function AIIntegrationHub() {
                         ) : (
                           <Mic className="w-6 h-6" />
                         )
+                      ) : isRecording ? (
+                        <MicOff className="w-6 h-6" />
                       ) : (
-                        isRecording ? (
-                          <MicOff className="w-6 h-6" />
-                        ) : (
-                          <Mic className="w-6 h-6" />
-                        )
+                        <Mic className="w-6 h-6" />
                       )}
                     </motion.div>
                   </Button>
                 </motion.div>
-                
+
                 <motion.div
                   className="text-center"
                   initial={{ opacity: 0 }}
@@ -495,7 +566,9 @@ export function AIIntegrationHub() {
                   <motion.div
                     className="text-sm text-gray-400"
                     animate={
-                      isGeminiConnected ? { color: "#10b981" } : { color: "#9ca3af" }
+                      isGeminiConnected
+                        ? { color: "#10b981" }
+                        : { color: "#9ca3af" }
                     }
                   >
                     {isGeminiConnected ? "Connected" : "Disconnected"}
@@ -503,15 +576,23 @@ export function AIIntegrationHub() {
                   <motion.div
                     className="text-xs text-gray-500"
                     animate={
-                      isCurrentlyRecording ? { opacity: [0.5, 1, 0.5] } : { opacity: 1 }
+                      isCurrentlyRecording
+                        ? { opacity: [0.5, 1, 0.5] }
+                        : { opacity: 1 }
                     }
                     transition={
-                      isCurrentlyRecording ? { duration: 1, repeat: Infinity } : {}
+                      isCurrentlyRecording
+                        ? { duration: 1, repeat: Infinity }
+                        : {}
                     }
                   >
                     {selectedProvider === "gemini"
-                      ? (connected ? "Voice & Video Active" : "Click to connect")
-                      : (isRecording ? "Recording..." : "Click to start")}
+                      ? connected
+                        ? "Voice & Video Active"
+                        : "Click to connect"
+                      : isRecording
+                      ? "Recording..."
+                      : "Click to start"}
                   </motion.div>
                 </motion.div>
               </motion.div>
