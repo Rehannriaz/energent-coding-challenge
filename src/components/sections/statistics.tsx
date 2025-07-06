@@ -1,9 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Card } from "@/components/ui/card"
+import { motion, useInView } from "framer-motion"
 
 export function Statistics() {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.3 })
+  
   const [counts, setCounts] = useState({
     users: 0,
     requests: 0,
@@ -18,8 +22,52 @@ export function Statistics() {
     countries: 150,
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.3,
+        delayChildren: 0.2
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 50,
+      scale: 0.8
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      scale: 1,
+      transition: {
+        type: "spring" as const,
+        damping: 25,
+        stiffness: 120
+      }
+    }
+  }
+
+  const headerVariants = {
+    hidden: { opacity: 0, y: -30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring" as const,
+        damping: 20,
+        stiffness: 100
+      }
+    }
+  }
+
   useEffect(() => {
-    const duration = 2000 // 2 seconds
+    if (!isInView) return
+    
+    const duration = 2500 // 2.5 seconds
     const steps = 60
     const stepDuration = duration / steps
 
@@ -43,7 +91,7 @@ export function Statistics() {
     }, stepDuration)
 
     return () => clearInterval(timer)
-  }, [])
+  }, [isInView])
 
   const stats = [
     {
@@ -69,29 +117,59 @@ export function Statistics() {
   ]
 
   return (
-    <section className="py-24 bg-[#0a0a0a]">
+    <section className="py-24 bg-[#0a0a0a]" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
+        <motion.div 
+          className="text-center mb-16"
+          variants={headerVariants}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+        >
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             <span className="text-gradient">Our Statistics</span>
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
             Numbers that speak to our commitment to excellence and the trust our users place in us.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <motion.div 
+          className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+        >
           {stats.map((stat, index) => (
-            <Card
-              key={index}
-              className="p-8 bg-white/5 border-white/10 backdrop-blur-sm text-center hover:bg-white/10 transition-all duration-300"
+            <motion.div
+              key={`statistic-${index}`}
+              variants={itemVariants}
+              whileHover={{ 
+                scale: 1.05,
+                y: -10,
+                transition: { duration: 0.3 }
+              }}
+              whileTap={{ scale: 0.95 }}
             >
-              <div className="text-4xl md:text-5xl font-bold text-gradient mb-4">{stat.number}</div>
-              <h3 className="text-xl font-semibold mb-2">{stat.label}</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">{stat.description}</p>
-            </Card>
+              <Card className="p-8 bg-white/5 border-white/10 backdrop-blur-sm text-center hover:bg-white/10 transition-all duration-300 h-full">
+                <motion.div 
+                  className="text-4xl md:text-5xl font-bold text-gradient mb-4"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={isInView ? { scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 }}
+                  transition={{ 
+                    delay: index * 0.2 + 0.5,
+                    type: "spring" as const,
+                    damping: 15,
+                    stiffness: 100
+                  }}
+                >
+                  {stat.number}
+                </motion.div>
+                <h3 className="text-xl font-semibold mb-2">{stat.label}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{stat.description}</p>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )

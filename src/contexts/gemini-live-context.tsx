@@ -27,7 +27,21 @@ export const GeminiLiveProvider: FC<GeminiLiveProviderProps> = ({
 export const useGeminiLiveContext = () => {
   const context = useContext(GeminiLiveContext);
   if (!context) {
-    throw new Error("useGeminiLiveContext must be used within a GeminiLiveProvider");
+    // Return a dummy context to prevent errors during loading or when provider is missing
+    console.warn("GeminiLiveContext not found. This might be during loading or missing provider.");
+    return {
+      client: null as any,
+      setConfig: () => {},
+      config: {},
+      model: "",
+      setModel: () => {},
+      connected: false,
+      connect: async () => {
+        console.warn("Gemini Live client not available");
+      },
+      disconnect: async () => {},
+      volume: 0,
+    };
   }
   return context;
 };

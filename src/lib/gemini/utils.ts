@@ -23,12 +23,28 @@ const map: Map<string, AudioContext> = new Map();
 export const audioContext: (
   options?: GetAudioContextOptions
 ) => Promise<AudioContext> = (() => {
-  const didInteract = new Promise((res) => {
-    window.addEventListener("pointerdown", res, { once: true });
-    window.addEventListener("keydown", res, { once: true });
-  });
+  let didInteract: Promise<void>;
+  
+  const initializeInteractionPromise = () => {
+    if (typeof window !== "undefined") {
+      didInteract = new Promise((res) => {
+        const handleInteraction = () => res();
+        window.addEventListener("pointerdown", handleInteraction, { once: true });
+        window.addEventListener("keydown", handleInteraction, { once: true });
+      });
+    } else {
+      didInteract = Promise.resolve();
+    }
+  };
 
   return async (options?: GetAudioContextOptions) => {
+    if (typeof window === "undefined") {
+      throw new Error("AudioContext is not available in server environment");
+    }
+    
+    if (!didInteract) {
+      initializeInteractionPromise();
+    }
     try {
       const a = new Audio();
       a.src =
@@ -63,7 +79,10 @@ export const audioContext: (
 })();
 
 export function base64ToArrayBuffer(base64: string) {
-  var binaryString = atob(base64);
+  if (typeof window === "undefined") {
+    throw new Error("base64ToArrayBuffer is not available in server environment");
+  }
+  var binaryString = window.atob(base64);
   var bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);

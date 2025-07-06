@@ -5,6 +5,8 @@ import "./globals.css"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { AIProvider } from "@/components/providers/ai-provider"
+import { MotionProvider } from "@/components/providers/motion-provider"
+import { GeminiProvider } from "@/components/providers/gemini-provider"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,9 +36,13 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body className="font-inter antialiased">
         <AIProvider>
-          <Navigation />
-          {children}
-          <Footer />
+          <GeminiProvider>
+            <MotionProvider>
+              <Navigation />
+              {children}
+              <Footer />
+            </MotionProvider>
+          </GeminiProvider>
         </AIProvider>
       </body>
     </html>

@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(npm run dev:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "WebFetch(domain:reactbits.dev)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx:*)",
+      "Bash(npm run build:*)",
+      "Bash(rg:*)",
+      "Bash(npm run lint)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": []
   }

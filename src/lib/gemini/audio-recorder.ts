@@ -1,130 +1,111 @@
-import { EventEmitter } from "eventemitter3";
+/**
+ * Copyright 2024 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { audioContext } from "./utils";
+import AudioRecordingWorklet from "./worklets/audio-processing";
+import VolMeterWorket from "./worklets/vol-meter";
+
+import { createWorketFromSrc } from "./audioworklet-registry";
+import EventEmitter from "eventemitter3";
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  var binary = "";
+  var bytes = new Uint8Array(buffer);
+  var len = bytes.byteLength;
+  for (var i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
 
 export class AudioRecorder extends EventEmitter {
-  private mediaRecorder: MediaRecorder | null = null;
-  private stream: MediaStream | null = null;
-  private isRecording: boolean = false;
-  private audioContext: AudioContext | null = null;
-  private analyser: AnalyserNode | null = null;
-  private volumeCallback: ((volume: number) => void) | null = null;
+  stream: MediaStream | undefined;
+  audioContext: AudioContext | undefined;
+  source: MediaStreamAudioSourceNode | undefined;
+  recording: boolean = false;
+  recordingWorklet: AudioWorkletNode | undefined;
+  vuWorklet: AudioWorkletNode | undefined;
+
+  private starting: Promise<void> | null = null;
+
+  constructor(public sampleRate = 16000) {
+    super();
+  }
 
   async start() {
-    try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("Could not request user media");
+    }
+
+    this.starting = new Promise(async (resolve, reject) => {
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      this.setupVolumeAnalysis();
-      this.setupMediaRecorder();
-      
-      this.mediaRecorder!.start(100);
-      this.isRecording = true;
-      
-      this.emit("start");
-    } catch (error) {
-      console.error("Error starting audio recorder:", error);
-      this.emit("error", error);
-    }
-  }
+      this.audioContext = await audioContext({ sampleRate: this.sampleRate });
+      this.source = this.audioContext.createMediaStreamSource(this.stream);
 
-  private setupVolumeAnalysis() {
-    if (!this.stream) return;
+      const workletName = "audio-recorder-worklet";
+      const src = createWorketFromSrc(workletName, AudioRecordingWorklet);
 
-    this.audioContext = new AudioContext();
-    this.analyser = this.audioContext.createAnalyser();
-    this.analyser.fftSize = 256;
-    
-    const source = this.audioContext.createMediaStreamSource(this.stream);
-    source.connect(this.analyser);
-    
-    this.monitorVolume();
-  }
+      await this.audioContext.audioWorklet.addModule(src);
+      this.recordingWorklet = new AudioWorkletNode(
+        this.audioContext,
+        workletName,
+      );
 
-  private monitorVolume() {
-    if (!this.analyser || !this.isRecording) return;
+      this.recordingWorklet.port.onmessage = async (ev: MessageEvent) => {
+        // worklet processes recording floats and messages converted buffer
+        const arrayBuffer = ev.data.data.int16arrayBuffer;
 
-    const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-    this.analyser.getByteFrequencyData(dataArray);
-    
-    const volume = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length / 255;
-    this.emit("volume", volume);
-    
-    if (this.isRecording) {
-      requestAnimationFrame(() => this.monitorVolume());
-    }
-  }
+        if (arrayBuffer) {
+          const arrayBufferString = arrayBufferToBase64(arrayBuffer);
+          this.emit("data", arrayBufferString);
+        }
+      };
+      this.source.connect(this.recordingWorklet);
 
-  private setupMediaRecorder() {
-    if (!this.stream) return;
+      // vu meter worklet
+      const vuWorkletName = "vu-meter";
+      await this.audioContext.audioWorklet.addModule(
+        createWorketFromSrc(vuWorkletName, VolMeterWorket),
+      );
+      this.vuWorklet = new AudioWorkletNode(this.audioContext, vuWorkletName);
+      this.vuWorklet.port.onmessage = (ev: MessageEvent) => {
+        this.emit("volume", ev.data.volume);
+      };
 
-    this.mediaRecorder = new MediaRecorder(this.stream, {
-      mimeType: "audio/webm",
+      this.source.connect(this.vuWorklet);
+      this.recording = true;
+      resolve();
+      this.starting = null;
     });
-
-    this.mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        this.processAudioData(event.data);
-      }
-    };
-
-    this.mediaRecorder.onerror = (error) => {
-      console.error("MediaRecorder error:", error);
-      this.emit("error", error);
-    };
-  }
-
-  private async processAudioData(audioBlob: Blob) {
-    try {
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
-      
-      const pcmData = this.convertToPCM16(audioBuffer);
-      const base64Data = this.arrayBufferToBase64(pcmData);
-      
-      this.emit("data", base64Data);
-    } catch (error) {
-      console.error("Error processing audio data:", error);
-    }
-  }
-
-  private convertToPCM16(audioBuffer: AudioBuffer): ArrayBuffer {
-    const length = audioBuffer.length;
-    const pcm16 = new Int16Array(length);
-    const floatData = audioBuffer.getChannelData(0);
-    
-    for (let i = 0; i < length; i++) {
-      pcm16[i] = Math.max(-32768, Math.min(32767, floatData[i] * 32768));
-    }
-    
-    return pcm16.buffer;
-  }
-
-  private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
   }
 
   stop() {
-    this.isRecording = false;
-    
-    if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
-      this.mediaRecorder.stop();
+    // its plausible that stop would be called before start completes
+    // such as if the websocket immediately hangs up
+    const handleStop = () => {
+      this.source?.disconnect();
+      this.stream?.getTracks().forEach((track) => track.stop());
+      this.stream = undefined;
+      this.recordingWorklet = undefined;
+      this.vuWorklet = undefined;
+    };
+    if (this.starting) {
+      this.starting.then(handleStop);
+      return;
     }
-    
-    if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
-    }
-    
-    if (this.audioContext) {
-      this.audioContext.close();
-    }
-    
-    this.emit("stop");
-  }
-
-  get recording() {
-    return this.isRecording;
+    handleStop();
   }
 }

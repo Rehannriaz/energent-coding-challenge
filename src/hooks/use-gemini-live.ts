@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GenAILiveClient } from "../lib/gemini/genai-live-client";
 import { LiveClientOptions } from "../types/gemini";
 import { AudioStreamer } from "../lib/gemini/audio-streamer";
+import { audioContext } from "../lib/gemini/utils";
+import VolMeterWorket from "../lib/gemini/worklets/vol-meter";
 import { LiveConnectConfig } from "@google/genai";
 
 export type UseGeminiLiveResults = {
@@ -30,12 +32,28 @@ export function useGeminiLive(options: LiveClientOptions): UseGeminiLiveResults 
   const [connected, setConnected] = useState(false);
   const [volume, setVolume] = useState(0);
 
+  // register audio for streaming server -> speakers
   useEffect(() => {
-    if (!audioStreamerRef.current) {
-      const audioCtx = new AudioContext();
-      audioStreamerRef.current = new AudioStreamer(audioCtx);
+    if (!audioStreamerRef.current && typeof window !== "undefined") {
+      audioContext({ id: "audio-out" })
+        .then((audioCtx: AudioContext) => {
+          audioStreamerRef.current = new AudioStreamer(audioCtx);
+          audioStreamerRef.current
+            .addWorklet<any>("vumeter-out", VolMeterWorket, (ev: any) => {
+              setVolume(ev.data.volume);
+            })
+            .then(() => {
+              // Successfully added worklet
+            })
+            .catch((error) => {
+              console.warn("Failed to add audio worklet:", error);
+            });
+        })
+        .catch((error) => {
+          console.warn("Failed to initialize audio context:", error);
+        });
     }
-  }, []);
+  }, [audioStreamerRef]);
 
   useEffect(() => {
     const onOpen = () => {
@@ -74,12 +92,24 @@ export function useGeminiLive(options: LiveClientOptions): UseGeminiLiveResults 
   }, [client]);
 
   const connect = useCallback(async () => {
-    if (!config) {
-      throw new Error("config has not been set");
+    try {
+      if (!config) {
+        throw new Error("config has not been set");
+      }
+      
+      // Check if we have a valid API key
+      if (!options.apiKey || options.apiKey === "dummy-key" || options.apiKey === "loading") {
+        console.warn("Cannot connect: Invalid or missing API key");
+        return;
+      }
+      
+      client.disconnect();
+      await client.connect(model, config);
+    } catch (error) {
+      console.error("Failed to connect to Gemini Live:", error);
+      setConnected(false);
     }
-    client.disconnect();
-    await client.connect(model, config);
-  }, [client, config, model]);
+  }, [client, config, model, options.apiKey]);
 
   const disconnect = useCallback(async () => {
     client.disconnect();

@@ -13,16 +13,9 @@ import {
 } from "@google/genai";
 
 import { EventEmitter } from "eventemitter3";
+import { difference } from "lodash";
 import { LiveClientOptions, StreamingLog } from "../../types/gemini";
-
-function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binaryString = window.atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
+import { base64ToArrayBuffer } from "./utils";
 
 export interface LiveClientEventTypes {
   audio: (data: ArrayBuffer) => void;
@@ -182,9 +175,8 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
         );
         const base64s = audioParts.map((p) => p.inlineData?.data);
 
-        const otherParts = parts.filter(
-          (p) => !p.inlineData || !p.inlineData.mimeType?.startsWith("audio/pcm")
-        );
+        // strip the audio parts out of the modelTurn
+        const otherParts = difference(parts, audioParts);
 
         base64s.forEach((b64) => {
           if (b64) {

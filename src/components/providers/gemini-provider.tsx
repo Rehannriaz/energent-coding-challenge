@@ -32,12 +32,28 @@ export function GeminiProvider({ children }: GeminiProviderProps) {
   }, []);
 
   if (loading) {
-    return <>{children}</>;
+    // Provide a dummy context during loading to prevent hook errors
+    const dummyOptions: LiveClientOptions = {
+      apiKey: "loading",
+    };
+    return (
+      <GeminiLiveProvider options={dummyOptions}>
+        {children}
+      </GeminiLiveProvider>
+    );
   }
   
   if (!apiKey) {
     console.warn("GEMINI_API_KEY is not set on backend. Gemini features will be disabled.");
-    return <>{children}</>;
+    // Provide a dummy API key to keep the provider structure, but it won't work
+    const dummyOptions: LiveClientOptions = {
+      apiKey: "dummy-key",
+    };
+    return (
+      <GeminiLiveProvider options={dummyOptions}>
+        {children}
+      </GeminiLiveProvider>
+    );
   }
 
   const apiOptions: LiveClientOptions = {
