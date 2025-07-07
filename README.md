@@ -8,6 +8,13 @@ Author: Rehannriaz
 
 # Energent AI - Coding Challenge
 
+
+- GitHub Repository: https://github.com/Rehannriaz/energent-coding-challenge
+
+- Live Deployment: https://energent-coding-challenge.vercel.app/
+
+ - Demo Video: https://youtu.be/YBlQUtmnZOk
+
 A modern, responsive web application inspired by Energent.ai with integrated AI voice chat capabilities. Built with React, TypeScript, Next.js, and Tailwind CSS.
 
 ## 🚀 Live Demo
